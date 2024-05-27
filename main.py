@@ -73,13 +73,10 @@ class ObjectInputPanel(wx.Panel):
         vertical_sizer = wx.BoxSizer(wx.VERTICAL)
         vertical_sizer.Add(checkbox, 0, wx.ALL | wx.CENTER, 5)
         limit_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        limit_sizer.Add(wx.StaticText(self, label="Limits: "), 0, wx.ALL | wx.CENTER, 5)
-        limit_sizer.Add(0, wx.ALL | wx.CENTER, 5)
         limit_sizer.Add(lower_limit, 0, wx.ALL | wx.CENTER, 5)
-        limit_sizer.Add(0, wx.ALL | wx.CENTER, 5)
         limit_sizer.Add(upper_limit, 0, wx.ALL | wx.CENTER, 5)
         vertical_sizer.Add(limit_sizer)
-        sizer.Add(vertical_sizer)
+        sizer.Add(vertical_sizer, 0, wx.ALL | wx.CENTER, 5)
 
     def get_values(self):
         return {
@@ -134,7 +131,7 @@ class ObjectInputPanel(wx.Panel):
 
 class MyFrame(wx.Frame):
     def __init__(self):
-        super().__init__(parent=None, title='Object Input GUI')
+        super().__init__(parent=None, title='Object Input GUI', size=(600, 400))
         self.panel = wx.Panel(self)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -156,6 +153,7 @@ class MyFrame(wx.Frame):
         self.objects = []
 
         self.panel.SetSizer(self.sizer)
+        self.SetSizeHints(600, 500)  # Set fixed size for the window
         self.Show()
 
     def on_add_object(self, event):
