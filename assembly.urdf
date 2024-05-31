@@ -1,0 +1,182 @@
+<robot name="assembly">
+  <link name="base_link" />
+
+  <link name="main_box">
+    <visual>
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/box_main.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+
+      <material name="">
+        <color rgba="0.87450980392 0.87450980392 0.87058823529 0.4" />
+      </material>
+    </visual>
+    <collision concave="yes" name="collision_mesh_2">
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/box_main.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+
+
+
+  <link name="box_top_0"/>
+
+  <link name="box_top_1">
+    <visual>
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/box_top.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+
+      <material name="">
+        <color rgba="0.87450980392 0.87450980392 0.87058823529 0.4" />
+      </material>
+    </visual>
+    <collision concave="yes" name="collision_mesh_1">
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/box_top.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+
+
+  <link name="screw1">
+    <visual>
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/screw1.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+
+      <material name="">
+        <color rgba="0.87450980392 0.87450980392 0.87058823529 1.0" />
+      </material>
+    </visual>
+    <collision concave="yes" name="screw_mesh_1">
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/screw1.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+
+ <link name="link_0_joint_2"/>
+ <link name="link_0_joint_1"/>
+ <link name="link_0_joint_0">
+    <visual>
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/goalprism.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+
+      <material name="">
+        <color rgba="0.87450980392 0.87450980392 0.87058823529 1.0" />
+      </material>
+    </visual>
+    <collision concave="yes" name="goal_prism">
+      <geometry>
+        <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/goalprism.dae"
+          scale=" 0.50 0.50 0.50" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+
+ <link name="goallink">
+      <visual>
+        <geometry>
+       <mesh
+          filename="/home/serboba/rb_ws/src/robowflex/robowflex_dart/include/io/envs/assembly/meshes/goalprism.dae"
+          scale=" 0.50 0.50 0.50" />
+        </geometry>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="">
+          <color rgba="0.0 0.8 0.0 0.3"/>
+      </material>
+      </visual>
+  </link>
+
+  <joint name="table_j" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0" />
+    <parent link="base_link" />
+    <child link="main_box" />
+  </joint>
+
+  
+<joint name="goal" type="fixed">
+    <origin rpy="0 0 0" xyz="1 -0.2 0.0"/>
+    <parent link="base_link"/>
+    <child link="goallink"/>
+  </joint>
+
+
+<joint name="link_0_joint_2" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.0" />
+    <parent link="main_box" />
+    <child link="link_0_joint_2" />
+    <axis xyz="1 0 0" />
+    <limit lower="-2.0" upper="2.0" effort="0.05" velocity="1.57" />
+  </joint>
+
+  <joint name="link_0_joint_1" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.0" />
+    <parent link="link_0_joint_2" />
+    <child link="link_0_joint_1" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.0" upper="2.0" effort="0.05" velocity="1.57" />
+  </joint>
+
+
+  <joint name="link_0_joint_0" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.0" />
+    <parent link="link_0_joint_1" />
+    <child link="link_0_joint_0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.0" upper="2.0" effort="0.05" velocity="1.57" />
+  </joint>
+
+
+<joint name="link_1_joint_0" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.01" />
+    <parent link="main_box" />
+    <child link="box_top_0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5" upper="1.5" effort="0.05" velocity="1.57" />
+  </joint>
+
+<joint name="link_1_joint_1" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.0" />
+    <parent link="box_top_0" />
+    <child link="box_top_1" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.5" upper="1.5" effort="0.05" velocity="1.57" />
+  </joint>
+
+ <joint name="link_2_joint_0" type="prismatic">
+    <origin rpy="0 0 0" xyz="0.0 0 0.05" />
+    <parent link="main_box" />
+    <child link="screw1" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5" upper="1.5" effort="0.05" velocity="1.57" />
+  </joint>
+
+
+</robot>

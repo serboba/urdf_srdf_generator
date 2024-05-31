@@ -1,5 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
+from xml.etree.cElementTree import *
+from ElementTree_pretty import prettify
+
+class ObjectURDF():
+    def __init__(self, id, name, mesh_path, scale, ):
+        pass
+
 
 class ObjectInputPanel(tk.Frame):
     def __init__(self, parent):
@@ -106,6 +113,41 @@ class ObjectInputPanel(tk.Frame):
             ul.delete(0, tk.END)
 
         self.current_id +=1
+
+    def add_object_to_tree(obj):
+        root = Element('')
+
+        base_link = SubElement(root, 'base_link',
+                               {'name' : 'base_link'})
+        
+        obj = SubElement(root, 'link', {'name' : obj.name})
+
+        visual = SubElement(obj, 'visual')
+        geometry_visual = SubElement(visual, 'geometry')
+        mesh_visual = SubElement(geometry_visual, 'mesh', {'filename' : obj.filename,
+                                             'scale' : obj.scale})
+        
+        origin_visual = SubElement(visual, 'origin', {'rpy' : '0 0 0',
+                                                      'xyz' : '0 0 0'})
+        
+        material_visual = SubElement(visual, 'material', {'name' : ""})
+        material_visual_color = SubElement(material_visual, 'color', {'rgba' :
+                                                                      "0.87450980392 0.87450980392 0.87058823529 0.4"})
+        ##########################
+
+        collision = SubElement(obj, 'collision', {'concave': 'yes', 'name': ''})
+        geometry_collision = SubElement(collision, 'geometry')
+        mesh_collision = SubElement(geometry_collision, 'mesh', {'filename' : obj.filename,
+                                             'scale' : obj.scale})
+        
+        origin_collision = SubElement(collision, 'origin', {'rpy' : '0 0 0',
+                                                      'xyz' : '0 0 0'})
+        
+        material_collision = SubElement(collision, 'material', {'name' : ""})
+        material_collision_color = SubElement(material_collision, 'color', {'rgba' :
+                                                                      "0.87450980392 0.87450980392 0.87058823529 0.4"})
+        
+
 
 root = tk.Tk()
 root.title("Object Input GUI")
