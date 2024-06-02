@@ -1,7 +1,21 @@
+# -----------------------------------------------------------------------------
+# Filename: main.py
+# Author: Servet Bora Bayraktar 
+# Date: 2024-05-27
+# -----------------------------------------------------------------------------
+# This file is part of urdf_srdf_generator.
+#
+# This project is licensed under the MIT License - see the LICENSE file for details.
+# -----------------------------------------------------------------------------
+
 import tkinter as tk
 from tkinter import messagebox
 from xml.etree.cElementTree import *
 from enum import Enum
+from tkinter import filedialog
+import os
+import shutil
+
 
 class Axis(Enum):
     X = 1
@@ -52,6 +66,10 @@ class ObjectInputPanel(tk.Frame):
         self.path_text = tk.Entry(self.input_frame, width=25)
         self.path_text.grid(row=1, column=1, padx=5, pady=2)
 
+
+        self.browse_button = tk.Button(self.input_frame, text="Browse", command=self.browse_file)
+        self.browse_button.grid(row=1, column=2, padx=5, pady=2)
+
         self.scale_label = tk.Label(self.input_frame, text="Scale:")
         self.scale_label.grid(row=2, column=0, padx=5, pady=2)
         self.scale_text = tk.Entry(self.input_frame, width=10)
@@ -87,11 +105,27 @@ class ObjectInputPanel(tk.Frame):
             lower_limit.grid(row=6+i, column=2, padx=2, pady=2)
             upper_limit.grid(row=6+i, column=3, padx=2, pady=2)
 
+        
+        self.environment_label = tk.Label(self.input_frame, text="Environment Name:")
+        self.environment_label.grid(row=9, column=0, padx=5, pady=2)
+        self.environment_text = tk.Entry(self.input_frame, width=25)
+        self.environment_text.grid(row=9, column=1, padx=5, pady=2)
+
+        self.export_label = tk.Label(self.input_frame, text="Export Directory:")
+        self.export_label.grid(row=10, column=0, padx=5, pady=2)
+        self.export_text = tk.Entry(self.input_frame, width=25)
+        self.export_text.grid(row=10, column=1, padx=5, pady=2)
+
+        self.export_browse_button = tk.Button(self.input_frame, text="Browse", command=self.browse_export_directory)
+        self.export_browse_button.grid(row=10, column=2, padx=5, pady=2)
+
+
+
         self.add_button = tk.Button(self.input_frame, text="Add Object", command=self.add_object)
-        self.add_button.grid(row=9, column=1, padx=5, pady=5)
+        self.add_button.grid(row=11, column=1, padx=5, pady=5)
 
         self.generate_button = tk.Button(self.input_frame, text="Generate Files", command=self.generate_files)
-        self.generate_button.grid(row=9, column=2, padx=5, pady=5)
+        self.generate_button.grid(row=11, column=2, padx=5, pady=5)
 
         self.list_box = tk.Listbox(self.list_frame)
         self.list_box.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
@@ -106,7 +140,27 @@ class ObjectInputPanel(tk.Frame):
     def generate_files(self):
         print("Generate Files button clicked.")
         # Add further functionality as needed for generating files
+
+        environment_name = self.environment_text.get()
+        export_directory = self.export_text.get()
+        
+        if environment_name == '':
+            messagebox.showerror("Error", "Environment name must be set")
+            return
+        if export_directory == '': 
+            messagebox.showerror("Error", "Export directory must be set")
+            return
+        
+
+        self.create_directory_structure()
+        self.copy_mesh_files_into_folder()
+
         self.build_urdf_tree()
+        self.build_srdf_tree()
+
+
+        self.environment_text.delete(0, tk.END)
+        self.export_text.delete(0, tk.END)
 
     def get_axis(self, text):
         return Axis.X if text == 'X' else Axis.Y if text == 'Y' else Axis.Z
@@ -135,6 +189,20 @@ class ObjectInputPanel(tk.Frame):
 
                 joints.append(Joint('revolute', self.get_axis(cb.cget('text')), float(ll.get()), float(ul.get())))
         return joints
+
+
+    def browse_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.path_text.delete(0, tk.END)
+            self.path_text.insert(0, file_path)
+
+    def browse_export_directory(self):
+        dir_path = filedialog.askdirectory()
+        if dir_path:
+            self.export_text.delete(0, tk.END)
+            self.export_text.insert(0, dir_path)
+
 
     def clean_fields(self):
         self.name_text.delete(0, tk.END)
@@ -181,7 +249,7 @@ class ObjectInputPanel(tk.Frame):
 
         
         self.list_box.insert(tk.END, f"Link name: {link_name}, #Joints: {len(joints)}, Scale: {scale}, Path: {path}")
-        self.current_id +=1
+        self.current_id += 1
 
 
     def create_link_xml_for_obj(self, obj, material_color="0.87450980392 0.87450980392 0.87058823529 0.4"):
@@ -190,9 +258,11 @@ class ObjectInputPanel(tk.Frame):
         # We could use obj.name but for simplicity we will use the joint_0 convention
         link_elems = []
 
+        mesh_path = obj.mesh_path.split('/')[-1]
+        copy_path = os.path.join(self.export_text.get(), self.environment_text.get(), 'meshes', mesh_path)
+
         max_joint_id = len(obj.joints)
         for i in range(max_joint_id):
-            print("i : "   , i, "- max_joint_id: ", max_joint_id)
             if i == 0:
                 link_name = 'link_'+ str(obj.id) + '_joint_0'
                 link_elem = Element('link', {'name' : link_name})
@@ -200,8 +270,8 @@ class ObjectInputPanel(tk.Frame):
                 visual = SubElement(link_elem, 'visual')
                 geometry_visual = SubElement(visual, 'geometry')
                     
-                mesh_visual = SubElement(geometry_visual, 'mesh', {'filename' : obj.mesh_path,
-                                                    'scale' : f'{obj.scale}, {obj.scale}, {obj.scale}'})
+                mesh_visual = SubElement(geometry_visual, 'mesh', {'filename' : copy_path,
+                                                    'scale' : f'{obj.scale} {obj.scale} {obj.scale}'})
                 
                 origin_visual = SubElement(visual, 'origin', {'rpy' : '0 0 0',
                                                             'xyz' : '0 0 0'})
@@ -213,8 +283,8 @@ class ObjectInputPanel(tk.Frame):
 
                 collision = SubElement(link_elem, 'collision', {'concave': 'yes', 'name': ''})
                 geometry_collision = SubElement(collision, 'geometry')
-                mesh_collision = SubElement(geometry_collision, 'mesh', {'filename' : obj.mesh_path,
-                                                    'scale' : f'{obj.scale}, {obj.scale}, {obj.scale}'})
+                mesh_collision = SubElement(geometry_collision, 'mesh', {'filename' : copy_path,
+                                                    'scale' : f'{obj.scale} {obj.scale} {obj.scale}'})
                 
                 origin_collision = SubElement(collision, 'origin', {'rpy' : '0 0 0',
                                                             'xyz' : '0 0 0'})
@@ -273,11 +343,53 @@ class ObjectInputPanel(tk.Frame):
             max_joint_id -= 1
         return joints
             
-    def add_object_to_tree(obj):
-        pass
-        
-        
+    def create_fixed_joint_xml(self, obj):
+        joint_elem = Element('joint', {'name' : f"{obj.name}",
+                                           'type' : 'fixed'})
+
+        origin_elem = SubElement(joint_elem, 'origin', {'rpy' : '0 0 0',
+                                                      'xyz' : '0 0 0'})
+        parent_elem = SubElement(joint_elem, 'parent', {'link' : 'base_link'})
+        child_elem = SubElement(joint_elem, 'child', {'link' : obj.name})
+        return joint_elem        
     
+    def create_fixed_link_xml(self, obj, material_color="0.87450980392 0.87450980392 0.87058823529 0.4"):
+
+
+        mesh_path = obj.mesh_path.split('/')[-1]
+        copy_path = os.path.join(self.export_text.get(), self.environment_text.get(), 'meshes', mesh_path)
+        
+        link_elem = Element('link', {'name' : obj.name})
+
+        visual = SubElement(link_elem, 'visual')
+        geometry_visual = SubElement(visual, 'geometry')
+                    
+        mesh_visual = SubElement(geometry_visual, 'mesh', {'filename' : copy_path,
+                                                    'scale' : f'{obj.scale}, {obj.scale}, {obj.scale}'})
+                
+        origin_visual = SubElement(visual, 'origin', {'rpy' : '0 0 0',
+                                                            'xyz' : '0 0 0'})
+                
+        material_visual = SubElement(visual, 'material', {'name' : ""})
+        material_visual_color = SubElement(material_visual, 'color', {'rgba' :
+                                                                            material_color})
+                ##########################
+
+        collision = SubElement(link_elem, 'collision', {'concave': 'yes', 'name': ''})
+        geometry_collision = SubElement(collision, 'geometry')
+        mesh_collision = SubElement(geometry_collision, 'mesh', {'filename' : copy_path,
+                                                    'scale' : f'{obj.scale} {obj.scale} {obj.scale}'})
+                
+        origin_collision = SubElement(collision, 'origin', {'rpy' : '0 0 0',
+                                                            'xyz' : '0 0 0'})
+                
+        material_collision = SubElement(collision, 'material', {'name' : ""})
+        material_collision_color = SubElement(material_collision, 'color', {'rgba' :
+                                                                            material_color})
+        link_elem_string = tostring(link_elem, encoding='unicode', method='xml')
+
+        return [link_elem]
+        
 
     def build_urdf_tree(self):
         root_urdf = Element('robot', {'name' : 'robot_name'})
@@ -285,19 +397,86 @@ class ObjectInputPanel(tk.Frame):
         base_link = SubElement(root_urdf, 'base_link',
                                {'name' : 'base_link'})
 
+        obj_id_fix = 0
         for obj in self.objects_urdf:
-            links = self.create_link_xml_for_obj(obj)
-            for link in links:
-                root_urdf.append(link)
-
+            if obj.joints == []:
+                links = self.create_fixed_link_xml(obj)
+                root_urdf.append(links[0])
+            else:
+                obj.id = obj_id_fix # objects with dof should start at 0, fixed objects dont need the id convention
+                links = self.create_link_xml_for_obj(obj)
+                for link in links:
+                    root_urdf.append(link)
+                obj_id_fix += 1
+            
+        obj_id_fix = 0
         for obj in self.objects_urdf:
-            joints = self.create_joint_xml_for_obj(obj)
-            for joint in joints:
+            if obj.joints == []:
+                joint = self.create_fixed_joint_xml(obj)
                 root_urdf.append(joint)
+            else:
+                obj.id = obj_id_fix # objects with dof should start at 0, fixed objects dont need the id convention
+                joints = self.create_joint_xml_for_obj(obj)
+                for joint in joints:
+                    root_urdf.append(joint)
+                obj_id_fix += 1
         
         tree = ElementTree(root_urdf)
-        dump(tree)
+        output_path = os.path.join(self.export_text.get(), self.environment_text.get(), 'urdf')
+        output_filename = self.environment_text.get() + '.urdf'
+        tree.write(os.path.join(output_path, output_filename), encoding='utf-8', xml_declaration=True)
+
+ #       dump(tree)
+    
+    
+    def build_srdf_tree(self):
+        root_srdf = Element('robot', {'name' : 'robot_name'})
         
+        obj_id_fix = 0
+        for obj in self.objects_urdf:
+            if obj.joints != []:
+                obj.id = obj_id_fix
+                group_elem = SubElement(root_srdf, 'group', {'name' : f'link_{obj.id}_gr'})
+                for i in range(len(obj.joints)):
+                    joint_elem = SubElement(group_elem, 'joint', {'name' : f'link_{obj.id}_joint_{i}'})
+                obj_id_fix += 1
+
+        tree = ElementTree(root_srdf)
+        output_path = os.path.join(self.export_text.get(), self.environment_text.get(), 'srdf')
+        output_filename = self.environment_text.get() + '.srdf'
+        tree.write(os.path.join(output_path, output_filename), encoding='utf-8', xml_declaration=True)
+
+#        dump(tree)
+
+    def create_directory_structure(self):
+        directory = self.export_text.get()
+        folder_name = self.environment_text.get()
+
+        if directory and folder_name:
+            full_path = os.path.join(directory, folder_name)
+            if not os.path.exists(full_path):
+                os.makedirs(full_path)
+                mesh_folder = os.path.join(full_path, 'meshes')
+                urdf_folder = os.path.join(full_path, 'urdf')
+                srdf_folder = os.path.join(full_path, 'srdf')
+                os.makedirs(mesh_folder)
+                os.makedirs(urdf_folder)
+                os.makedirs(srdf_folder)
+                print(f"Folder '{folder_name}' created at '{directory}'")
+            else:
+                print(f"Folder '{folder_name}' already exists at '{directory}'")
+        else:
+            print("Export directory or folder name is missing")
+
+    def copy_mesh_files_into_folder(self):
+        for obj in self.objects_urdf:
+            mesh_path = obj.mesh_path
+
+            if mesh_path:
+                mesh_folder = os.path.join(self.export_text.get(), self.environment_text.get(), 'meshes')
+                shutil.copy(mesh_path, mesh_folder)
+                print(f"Mesh file '{mesh_path}' copied to '{mesh_folder}'")
+
 
 
 root = tk.Tk()
