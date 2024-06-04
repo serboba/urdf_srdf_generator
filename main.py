@@ -16,6 +16,16 @@ from tkinter import filedialog
 import os
 import shutil
 
+from xml.dom import minidom
+
+# Assuming root_srdf is already defined somewhere in your code
+# Example: root_srdf = ET.Element("robot", name="example_robot")
+
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element."""
+    rough_string = ElementTree.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="    ")
 
 class Axis(Enum):
     X = 1
@@ -365,7 +375,7 @@ class ObjectInputPanel(tk.Frame):
         geometry_visual = SubElement(visual, 'geometry')
                     
         mesh_visual = SubElement(geometry_visual, 'mesh', {'filename' : copy_path,
-                                                    'scale' : f'{obj.scale}, {obj.scale}, {obj.scale}'})
+                                                    'scale' : f'{obj.scale} {obj.scale} {obj.scale}'})
                 
         origin_visual = SubElement(visual, 'origin', {'rpy' : '0 0 0',
                                                             'xyz' : '0 0 0'})
@@ -392,9 +402,9 @@ class ObjectInputPanel(tk.Frame):
         
 
     def build_urdf_tree(self):
-        root_urdf = Element('robot', {'name' : 'robot_name'})
+        root_urdf = Element('robot', {'name' : self.environment_text.get()})
 
-        base_link = SubElement(root_urdf, 'base_link',
+        base_link = SubElement(root_urdf, 'link',
                                {'name' : 'base_link'})
 
         obj_id_fix = 0
@@ -441,9 +451,23 @@ class ObjectInputPanel(tk.Frame):
                     joint_elem = SubElement(group_elem, 'joint', {'name' : f'link_{obj.id}_joint_{i}'})
                 obj_id_fix += 1
 
+        for obj in self.objects_urdf:
+            for i, joint in enumerate(obj.joints):
+                base_disable_col_elem = SubElement(root_srdf, 'disable_collisions', {
+                        'link1' : f'base_link',
+                        'link2' : f'link_{obj.id}_joint_{i}',
+                        'reason': 'default'
+                    })
+                for j in range(i+1,len(obj.joints)):
+                    disable_col_elem = SubElement(root_srdf, 'disable_collisions', {
+                        'link1' : f'link_{obj.id}_joint_{i}',
+                        'link2' : f'link_{obj.id}_joint_{j}',
+                        'reason': 'default'
+                    })
+
         tree = ElementTree(root_srdf)
         output_path = os.path.join(self.export_text.get(), self.environment_text.get(), 'srdf')
-        output_filename = self.environment_text.get() + '.srdf'
+        output_filename = self.environment_text.get() + '.srdf' 
         tree.write(os.path.join(output_path, output_filename), encoding='utf-8', xml_declaration=True)
 
 #        dump(tree)
